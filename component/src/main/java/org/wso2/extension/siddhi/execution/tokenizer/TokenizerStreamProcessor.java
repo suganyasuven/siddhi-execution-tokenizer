@@ -1,7 +1,23 @@
+/*
+ * Copyright (c)  2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.wso2.extension.siddhi.execution.tokenizer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import emoji4j.EmojiUtils;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
@@ -19,78 +35,63 @@ import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 
 /**
  * splits a string into words
  */
 
 @Extension(
-        name = "getWords",
-        namespace = "tokenizer",
+        name = "tokenize",
+        namespace = "text",
         description = "This splits a string into words",
         parameters = {
                 @Parameter(name = "text",
                         description = "The input text which should be split.",
-                        type = {DataType.STRING})
+                        type = {DataType.STRING}),
         },
         examples = @Example(
-                syntax = "define stream inputStream (timestamp long, text string);\n" +
+                syntax = "define stream inputStream (text string);\n" +
                         "@info(name = 'query1')\n" +
-                        "from inputStream#tokenizer:getWords(text)\n" +
-                        "select timestamp,text\n" +
+                        "from inputStream#text:tokenize(text)\n" +
+                        "select text\n" +
                         "insert into outputStream;",
                 description = "This query performs tokenization for the given string.")
 )
 
 public class TokenizerStreamProcessor extends StreamProcessor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TokenizerStreamProcessor.class);
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        Array<Object> words = new ArrayList<Object>();
+        //Urls
+        Pattern urlPattern = Pattern.compile("(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+        // Punctuation chars
+        String punctChars = "[\\s+'“”‘’\\\".?!,:;&]";
+        String brackets = "[" + "<>«»{}\\(\\)\\[\\]" + "]";
+        // Numeric
+        String timeLike = "\\d+:\\d+";
+        String numNum = "\\d+\\.\\d+";
+        Pattern pattern = Pattern.compile(punctChars + "|" + brackets + "|" + timeLike + "|" + numNum);
         while (streamEventChunk.hasNext()) {
             StreamEvent streamEvent = streamEventChunk.next();
-            LOGGER.info("events", streamEvent);
-            String event = streamEvent.getOutputData()[0].toString();
-            LOGGER.info("String", event);
-
-            StringTokenizer st = new StringTokenizer(event, " :/.,#@*");
-            while (st.hasMoreTokens()) {
-                words.add(st.nextToken());
-                LOGGER.info("Token", st.nextToken());
-                List<Object> data =words;
-                // If output has values, then add those values to output stream
-                complexEventPopulater.populateComplexEvent(streamEvent, data);
+            String event = (String) attributeExpressionExecutors[0].execute(streamEvent);
+            event = urlPattern.matcher(event).replaceAll("");
+            event = EmojiUtils.removeAllEmojis(event);
+            String[] words = pattern.split(event);
+            for (String word : words) {
+                if (!word.equals("")) {
+                    Object[] data = {word};
+                    complexEventPopulater.populateComplexEvent(streamEvent, data);
+                    nextProcessor.process(streamEventChunk);
+                }
             }
+
         }
-        LOGGER.info("wordbucket" + words);
-        nextProcessor.process(streamEventChunk);
     }
-
-    /* while (streamEventChunk.hasNext()) {
-        StreamEvent event = streamEventChunk.next();
-        if (logger.isDebugEnabled()) {
-            logger.debug(String.format("Event received; Model name: %s Event:%s", modelName, event));
-        }
-
-        double[] features = new double[numberOfFeatures];
-        for (int i = 0; i < numberOfFeatures; i++) {
-            // attributes cannot ever be any other type than double as we've validated the query at init
-            features[i] = (double) featureVariableExpressionExecutors.get(i).execute(event);
-        }
-
-        Object[] data = PerceptronModelsHolder.getInstance().getPerceptronModel(modelName).classify(features);
-        // If output has values, then add those values to output stream
-        complexEventPopulater.populateComplexEvent(event, data);
-    }
-}
-        nextProcessor.process(streamEventChunk);*/
 
     /**
      * The initialization method for {@link StreamProcessor}, which will be called before other methods and validate
@@ -104,33 +105,30 @@ public class TokenizerStreamProcessor extends StreamProcessor {
     protected List<Attribute> init(AbstractDefinition inputDefinition,
                                    ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
                                    SiddhiAppContext siddhiAppContext) {
-        ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-
         if (attributeExpressionExecutors.length == 1) {
-
-            if (attributeExpressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
-                attributes.add(new Attribute("text", Attribute.Type.STRING));
-
-            } else {
+            if (attributeExpressionExecutors[0].getReturnType() != Attribute.Type.STRING) {
                 throw new SiddhiAppCreationException("Parameter should be of type string. But found "
                         + attributeExpressionExecutors[0].getReturnType());
             }
         } else {
             throw new IllegalArgumentException(
-                    "Invalid no of arguments passed to tokenizer:getWord() function, "
+                    "Invalid no of arguments passed to text:tokenize() function, "
                             + "required 1, but found " + attributeExpressionExecutors.length);
         }
+
+        List<Attribute> attributes = new ArrayList<>();
+        attributes.add(new Attribute("token", Attribute.Type.STRING));
         return attributes;
     }
 
     @Override
     public void start() {
-
+        //Do Nothing
     }
 
     @Override
     public void stop() {
-
+        //Do Nothing
     }
 
     @Override
@@ -140,6 +138,6 @@ public class TokenizerStreamProcessor extends StreamProcessor {
 
     @Override
     public void restoreState(Map<String, Object> state) {
-
+        //Do Nothing
     }
 }

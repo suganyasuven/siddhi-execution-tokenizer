@@ -12,5 +12,6 @@ extra:
 pages:
 - Welcome to WSO2 Siddhi Execution Tokenizer: index.md
 - API Docs:
-- License: about/license.md
+  - latest: latest.md
+- License: license.md
 theme: material
