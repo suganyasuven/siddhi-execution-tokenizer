@@ -61,14 +61,12 @@ public class TestCaseOfEntityTokenizer {
                     count.incrementAndGet();
                     if (count.get() == 1) {
                         AssertJUnit.assertArrayEquals(new Object[]
-                                        {"Amazon,Google,Apple","Amazon"},
+                                        {"Amazon,Google,Apple", "Amazon"},
                                 inEvents[0].getData());
                         eventArrived = true;
                     }
                     if (count.get() == 4) {
-                        AssertJUnit.assertArrayEquals(new Object[]
-                                        {},
-                                inEvents[0].getData());
+                        AssertJUnit.assertArrayEquals(new Object[]{}, inEvents[0].getData());
                         eventArrived = true;
                     }
                 }
@@ -78,8 +76,8 @@ public class TestCaseOfEntityTokenizer {
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler("inputStream");
         siddhiAppRuntime.start();
         inputHandler.send(new Object[]{"Amazon,Google,Apple"});
-        inputHandler.send(new Object[]{null});
-        SiddhiTestHelper.waitForEvents(100, 2, count, 60000);
+        inputHandler.send(new Object[]{"null"});
+        SiddhiTestHelper.waitForEvents(100, 3, count, 60000);
         AssertJUnit.assertEquals(eventArrived, true);
         AssertJUnit.assertEquals(3, count.get());
         siddhiAppRuntime.shutdown();
@@ -90,7 +88,7 @@ public class TestCaseOfEntityTokenizer {
         LOGGER.info("EntityTokenizerStreamProcessorExtension TestCase with Zero arguments");
         SiddhiManager siddhiManager = new SiddhiManager();
 
-        String inStreamDefinition = "define stream inputStream (text2 string);";
+        String inStreamDefinition = "define stream inputStream (data string);";
         String query = ("@info(name = 'query1') from inputStream#entity:tokenize()" +
                 "insert into outputStream;");
         siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
@@ -101,8 +99,8 @@ public class TestCaseOfEntityTokenizer {
         LOGGER.info("EntityTokenizerStreamProcessorExtension TestCase with invalid data type for text");
         SiddhiManager siddhiManager = new SiddhiManager();
 
-        String inStreamDefinition = "define stream inputStream (text2 double);";
-        String query = ("@info(name = 'query1') from inputStream#entity:tokenize(text2) " +
+        String inStreamDefinition = "define stream inputStream (data double);";
+        String query = ("@info(name = 'query1') from inputStream#entity:tokenize(data) " +
                 "insert into outputStream;");
         siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
     }
@@ -112,8 +110,8 @@ public class TestCaseOfEntityTokenizer {
         LOGGER.info("TokenizerExtension TestCase with null value");
         SiddhiManager siddhiManager = new SiddhiManager();
 
-        String inStreamDefinition = "define stream inputStream (text2 string);";
-        String query = ("@info(name = 'query1') from inputStream#entity:tokenize(text2)  " +
+        String inStreamDefinition = "define stream inputStream (data string);";
+        String query = ("@info(name = 'query1') from inputStream#entity:tokenize(data)  " +
                 "insert into outputStream;");
         SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
 
@@ -123,4 +121,3 @@ public class TestCaseOfEntityTokenizer {
         siddhiAppRuntime.shutdown();
     }
 }
-

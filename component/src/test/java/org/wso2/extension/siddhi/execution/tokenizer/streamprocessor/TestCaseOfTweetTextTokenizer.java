@@ -78,9 +78,9 @@ public class TestCaseOfTweetTextTokenizer {
                 " comma. It drives me mad \uD83D\uDC2D \uD83D\uDE00, the way it interrupts the flow of the headline." +
                 " What would be so wrong with using the word \"and\" there? https://t.co/VOl7zMk9Ar"});
         inputHandler.send(new Object[]{"Shopping @Amazon #Amazon"});
-        SiddhiTestHelper.waitForEvents(100, 2, count, 60000);
+        SiddhiTestHelper.waitForEvents(100, 13, count, 60000);
         AssertJUnit.assertEquals(eventArrived, true);
-        AssertJUnit.assertEquals(15, count.get());
+        AssertJUnit.assertEquals(13, count.get());
         siddhiAppRuntime.shutdown();
     }
 

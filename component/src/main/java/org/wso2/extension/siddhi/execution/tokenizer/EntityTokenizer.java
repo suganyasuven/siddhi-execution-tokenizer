@@ -66,8 +66,8 @@ public class EntityTokenizer extends StreamProcessor {
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         while (streamEventChunk.hasNext()) {
             StreamEvent streamEvent = streamEventChunk.next();
-            if (attributeExpressionExecutors[0].execute(streamEvent) != null) {
                 String event = (String) attributeExpressionExecutors[0].execute(streamEvent);
+            if (!event.equals("null")) {
                 String[] words = event.split(",");
                 for (String word : words) {
                     Object[] data = {word};
@@ -89,10 +89,10 @@ public class EntityTokenizer extends StreamProcessor {
         @Override
         protected List<Attribute> init (AbstractDefinition inputDefinition,
                 ExpressionExecutor[]attributeExpressionExecutors, ConfigReader configReader,
-                SiddhiAppContext siddhiAppContext){
+                SiddhiAppContext siddhiAppContext) {
             if (attributeExpressionExecutors.length == 1) {
                 if (attributeExpressionExecutors[0].getReturnType() != Attribute.Type.STRING) {
-                    throw new SiddhiAppCreationException("Parameter should be of type string. But found "
+                    throw new SiddhiAppCreationException("Entity element should be of type string. But found "
                             + attributeExpressionExecutors[0].getReturnType());
                 }
             } else {
@@ -122,7 +122,7 @@ public class EntityTokenizer extends StreamProcessor {
         }
 
         @Override
-        public void restoreState (Map < String, Object > state){
+        public void restoreState (Map<String, Object> state){
             //Do Nothing
         }
     }

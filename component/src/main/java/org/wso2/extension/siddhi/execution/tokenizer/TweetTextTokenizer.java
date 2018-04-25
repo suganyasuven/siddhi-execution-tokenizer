@@ -87,7 +87,8 @@ public class TweetTextTokenizer extends StreamProcessor {
             StreamEvent streamEvent = streamEventChunk.next();
             String event = (String) attributeExpressionExecutors[0].execute(streamEvent);
             event = event.replaceAll(urlPattern, "").replaceAll("@(.*)", "").
-                    replaceAll("#(.*)", "");
+                    replaceAll("#(.*)", "").replaceAll("[0-9]+", "")
+                    .replaceAll("‼", "").replaceAll("…", "");
             //event = EmojiUtils.removeAllEmojis(event);
             String[] words = pattern.split(event);
             for (String word : words) {
@@ -114,7 +115,7 @@ public class TweetTextTokenizer extends StreamProcessor {
                                    SiddhiAppContext siddhiAppContext) {
         if (attributeExpressionExecutors.length == 1) {
             if (attributeExpressionExecutors[0].getReturnType() != Attribute.Type.STRING) {
-                throw new SiddhiAppCreationException("Parameter should be of type string. But found "
+                throw new SiddhiAppCreationException("Text should be of type string. But found "
                         + attributeExpressionExecutors[0].getReturnType());
             }
         } else {
