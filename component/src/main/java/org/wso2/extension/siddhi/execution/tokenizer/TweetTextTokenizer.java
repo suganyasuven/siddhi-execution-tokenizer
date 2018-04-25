@@ -17,7 +17,7 @@
  */
 package org.wso2.extension.siddhi.execution.tokenizer;
 
-import emoji4j.EmojiUtils;
+import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
@@ -35,6 +35,12 @@ import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,13 +68,14 @@ import java.util.regex.Pattern;
                 description = "This query performs tokenization for the given string.")
 )
 
-public class TokenizerStreamProcessor extends StreamProcessor {
+public class TweetTextTokenizer extends StreamProcessor {
+    private static final Logger log = Logger.getLogger(TweetTextTokenizer.class);
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         //Urls
-        Pattern urlPattern = Pattern.compile("(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+        String urlPattern = "(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
         // Punctuation chars
         String punctChars = "[\\s+'“”‘’\\\".?!,:;&]";
         String brackets = "[" + "<>«»{}\\(\\)\\[\\]" + "]";
@@ -79,17 +86,17 @@ public class TokenizerStreamProcessor extends StreamProcessor {
         while (streamEventChunk.hasNext()) {
             StreamEvent streamEvent = streamEventChunk.next();
             String event = (String) attributeExpressionExecutors[0].execute(streamEvent);
-            event = urlPattern.matcher(event).replaceAll("");
-            event = EmojiUtils.removeAllEmojis(event);
+            event = event.replaceAll(urlPattern, "").replaceAll("@(.*)", "").
+                    replaceAll("#(.*)", "");
+            //event = EmojiUtils.removeAllEmojis(event);
             String[] words = pattern.split(event);
             for (String word : words) {
-                if (!word.equals("")) {
+                if (!word.equals("") && isMeaningful(word) && word.length() > 2) {
                     Object[] data = {word};
                     complexEventPopulater.populateComplexEvent(streamEvent, data);
                     nextProcessor.process(streamEventChunk);
                 }
             }
-
         }
     }
 
@@ -139,5 +146,23 @@ public class TokenizerStreamProcessor extends StreamProcessor {
     @Override
     public void restoreState(Map<String, Object> state) {
         //Do Nothing
+    }
+
+    private boolean isMeaningful(String word) {
+        String line;
+        InputStream inputStream = TweetTextTokenizer.class.getResourceAsStream("/words.csv");
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream,
+                StandardCharsets.UTF_8))) {
+            while ((line = bufferedReader.readLine()) != null) {
+                if (word.equalsIgnoreCase(line)) {
+                    return false;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            log.error("File is not found : " + e.getMessage());
+        } catch (IOException e) {
+            log.error("Error occurred while reading file : " + e.getMessage());
+        }
+        return true;
     }
 }

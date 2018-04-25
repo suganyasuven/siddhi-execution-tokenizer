@@ -21,7 +21,7 @@
 <suite name="Siddhi-Execution-Tokenizer-Test-Suite">
     <test name="Siddhi-execution-tokenizer-tests" enabled="true" preserve-order="true" parallel="false">
         <classes>
-            <class name="org.wso2.extension.siddhi.execution.tokenizer.streamprocessor.TestCaseOfTokenizerStreamProcessor"/>
+            <class name="org.wso2.extension.siddhi.execution.tokenizer.streamprocessor.TestCaseOfTweetTextTokenizer"/>
         </classes>
     </test>
 </suite>

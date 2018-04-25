@@ -47,6 +47,11 @@
             <groupId>com.kcthota</groupId>
             <artifactId>emoji4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -111,12 +116,16 @@
                             org.wso2.extension.siddhi.execution.tokenizer,
                             org.wso2.extension.siddhi.execution.tokenizer.*
                         </Export-Package>
+                        <Private-Package>
+                            emoji4j.*
+                        </Private-Package>
                         <Import-Package>
                             *;resolution:=optional
                         </Import-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                         <Include-Resource>
-                            META-INF=target/classes/META-INF
+                            META-INF=target/classes/META-INF,
+                            words.csv=target/classes/words.csv
                         </Include-Resource>
                     </instructions>
                 </configuration>
