@@ -79,17 +79,18 @@ public class TweetTextTokenizer extends StreamProcessor {
         // Punctuation chars
         String punctChars = "[\\s+'“”‘’\\\".?!,:;&]";
         String brackets = "[" + "<>«»{}\\(\\)\\[\\]" + "]";
+        String decorations = "[♫♪]+";
         // Numeric
         String timeLike = "\\d+:\\d+";
         String numNum = "\\d+\\.\\d+";
-        Pattern pattern = Pattern.compile(punctChars + "|" + brackets + "|" + timeLike + "|" + numNum);
+        Pattern pattern = Pattern.compile(punctChars + "|" + brackets + "|" + timeLike + "|" + numNum
+                + "|" + decorations);
         while (streamEventChunk.hasNext()) {
             StreamEvent streamEvent = streamEventChunk.next();
             String event = (String) attributeExpressionExecutors[0].execute(streamEvent);
             event = event.replaceAll(urlPattern, "").replaceAll("@(.*)", "").
                     replaceAll("#(.*)", "").replaceAll("[0-9]+", "")
                     .replaceAll("‼", "").replaceAll("…", "");
-            //event = EmojiUtils.removeAllEmojis(event);
             String[] words = pattern.split(event);
             for (String word : words) {
                 if (!word.equals("") && isMeaningful(word) && word.length() > 2) {
